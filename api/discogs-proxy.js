@@ -20,15 +20,30 @@ export default async function handler(req, res) {
         // Fetch from Discogs API
         const response = await fetch(url, {
             headers: {
-                'User-Agent': 'AlbumTracker/1.0'
+                'User-Agent': 'AlbumTracker/1.0 +https://github.com/mtnutholme'
             }
         });
         
-        const data = await response.json();
+        // Get response text first
+        const text = await response.text();
         
-        // Return the data
-        res.status(response.status).json(data);
+        // Try to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            // If not JSON, return as text
+            return res.status(response.status).send(text);
+        }
+        
+        // Return the JSON data with the same status code from Discogs
+        return res.status(response.status).json(data);
+        
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Proxy error:', error);
+        return res.status(500).json({ 
+            error: error.message,
+            details: 'Failed to fetch from Discogs API'
+        });
     }
 }
